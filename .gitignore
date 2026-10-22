@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+
+# React / Node
+node_modules/
+dist/
+
+# .NET
+bin/
+obj/
+
+# IDE and operating system
+.vscode/
+.vs/
+.idea/
+.DS_Store
+Thumbs.db
+
+# User uploads and local databases
+uploads/
+*.mdf
+*.ldf
