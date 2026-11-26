@@ -24,3 +24,22 @@ Thumbs.db
 uploads/
 *.mdf
 *.ldf
+
+# Local configuration and secrets
+.env.*
+!.env.example
+secrets.json
+appsettings.Local.json
+*.user
+*.suo
+
+# Python environments
+.pytest_cache/
+.mypy_cache/
+
+# Build and temporary files
+coverage/
+*.log
+
+# Local ASP.NET development settings
+backend/NutriLens.Api/appsettings.Development.json
