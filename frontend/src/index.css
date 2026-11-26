@@ -1,56 +1,33 @@
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@500;600;700;800&display=swap');
+@import "tailwindcss";
 
-:root {
-  font-family: 'DM Sans', Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  color: #1d3028;
-  background: #f5f7f2;
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-  font-optical-sizing: auto;
-  font-weight: 400;
-  color-scheme: light;
+@theme {
+  --font-display: "Plus Jakarta Sans", "DM Sans", system-ui, sans-serif;
+  --font-sans: "DM Sans", system-ui, -apple-system, sans-serif;
+  --color-sage-50: #F4F8F4;
+  --color-sage-100: #E6F0E7;
+  --color-sage-200: #CCE0CE;
+  --color-sage-300: #A5C8AA;
+  --color-sage-500: #5A8B66;
+  --color-sage-600: #426E4D;
+  --color-sage-700: #2E5238;
+  --color-forest-800: #1D4130;
+  --color-forest-900: #143326;
+  --color-forest-950: #0C2118;
 }
 
-* { box-sizing: border-box; }
+@layer base {
+  body {
+    font-family: var(--font-sans);
+    background-color: #F7FAF7;
+    color: #143326;
+  }
 
-html { min-width: 320px; scroll-behavior: smooth; }
-
-body {
-  margin: 0;
-  min-width: 320px;
-  min-height: 100vh;
-  background: #f5f7f2;
+  h1, h2, h3, h4 {
+    font-family: var(--font-display);
+    letter-spacing: -0.025em;
+  }
 }
 
-body, button, input, textarea { font-family: 'DM Sans', Inter, system-ui, sans-serif; }
-
-button, input { font: inherit; }
-
-button { cursor: pointer; }
-
-button:focus-visible, input:focus-visible {
-  outline: 3px solid rgba(67, 126, 91, .25);
-  outline-offset: 2px;
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
 }
-
-#root {
-  width: 100%;
-  min-height: 100vh;
-  margin: 0;
-  text-align: left;
-}
-
-h1, h2, h3, h4, p { margin-top: 0; }
-
-h1, h2, h3, h4 {
-  font-family: 'Manrope', 'DM Sans', sans-serif;
-  color: #183b2d;
-  font-weight: 800;
-  letter-spacing: -0.035em;
-}
-
-p { line-height: 1.65; }
-
-::selection { background: #d9eadb; color: #183b2d; }
