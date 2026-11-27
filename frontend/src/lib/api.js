@@ -45,7 +45,22 @@ export const PRODUCTS_API = {
     return apiRequest(`/products${str ? `?${str}` : ''}`);
   },
   get: (id) => apiRequest(`/products/${id}`),
+  getExternal: (source, externalId) =>
+    apiRequest(`/products/external/${encodeURIComponent(source)}/${encodeURIComponent(externalId)}`),
   compare: (ids) => apiRequest(`/products/compare?ids=${ids.join(',')}`),
+  searchExternal: ({ q = '', category = 'all', source = 'all', page = 1, pageSize = 12 } = {}) => {
+    const qs = new URLSearchParams();
+    if (q) qs.set('q', q);
+    if (category && category !== 'all') qs.set('category', category);
+    if (source) qs.set('source', source);
+    qs.set('page', String(page));
+    qs.set('pageSize', String(pageSize));
+    return apiRequest(`/products/search-external?${qs.toString()}`);
+  },
+  importExternal: (source, externalId) =>
+    apiRequest(`/products/import-external/${encodeURIComponent(source)}/${encodeURIComponent(externalId)}`, {
+      method: 'POST',
+    }),
   searchOff: (q) => apiRequest(`/products/search-off?q=${encodeURIComponent(q)}`),
   importOff: (barcode) => apiRequest(`/products/import-off/${encodeURIComponent(barcode)}`, { method: 'POST' }),
 };

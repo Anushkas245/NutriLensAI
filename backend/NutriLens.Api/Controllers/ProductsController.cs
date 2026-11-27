@@ -69,12 +69,13 @@ public class ProductsController : ControllerBase
         if (!string.IsNullOrWhiteSpace(q))
         {
             var term = q.Trim().ToLower();
+            var normalizedBarcode = term.TrimStart('0');
             query = query.Where(p =>
                 p.ProductName.ToLower().Contains(term) ||
                 (p.Brand != null && p.Brand.ToLower().Contains(term)) ||
                 (p.Category != null && p.Category.ToLower().Contains(term)) ||
                 (p.Ingredients != null && p.Ingredients.ToLower().Contains(term)) ||
-                (p.Barcode != null && p.Barcode.Contains(term)));
+                (p.Barcode != null && (p.Barcode.Contains(term) || (normalizedBarcode.Length >= 5 && p.Barcode.Contains(normalizedBarcode)))));
         }
 
         var items = await query.ToListAsync();
@@ -201,9 +202,158 @@ public class ProductsController : ControllerBase
         {
             product,
             assessment = assessed,
-            betterAlternatives = alternatives
+            betterAlternatives = alternatives,
+            isExternal = false
         });
     }
+
+    [HttpGet("external/{source}/{externalId}")]
+    public async Task<IActionResult> GetExternalProduct(string source, string externalId)
+    {
+        if (string.IsNullOrWhiteSpace(externalId))
+            return BadRequest(new { message = "External product identifier is required." });
+
+        try
+        {
+            var detail = await _offService.FetchExternalDetailAsync(source, externalId);
+            if (detail == null)
+                return NotFound(new { message = $"No packaged food record found on {source} for '{externalId}'." });
+
+            // Check if already imported in SQL Server
+            var existing = await FindExistingLocalProductAsync(detail.Product.Barcode, detail.Product.OffProductUrl);
+            var alternatives = await FindBetterAlternativesAsync(detail.Product.Category, detail.Assessment.HealthScore, existing?.ProductId);
+
+            return Ok(new
+            {
+                product = detail.Product,
+                assessment = detail.Assessment,
+                betterAlternatives = alternatives,
+                isExternal = true,
+                source = detail.Source,
+                externalId = detail.ExternalId,
+                nutriScoreGrade = detail.NutriScoreGrade,
+                rawCategories = detail.RawCategories,
+                existingProductId = existing?.ProductId
+            });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(502, new { message = $"Unable to retrieve external product details: {ex.Message}" });
+        }
+    }
+
+    [HttpGet("search-external")]
+    public async Task<IActionResult> SearchExternal(
+        [FromQuery] string? q = null,
+        [FromQuery] string? category = null,
+        [FromQuery] string source = "all",
+        [FromQuery] int page = 1,
+        [FromQuery] int pageSize = 12)
+    {
+        if (string.IsNullOrWhiteSpace(q) && (string.IsNullOrWhiteSpace(category) || category.Equals("all", StringComparison.OrdinalIgnoreCase)))
+            return BadRequest(new { message = "Enter a product name, brand, barcode, or select a category to search external food databases." });
+
+        try
+        {
+            var result = await _offService.SearchExternalAsync(q ?? string.Empty, category, source, page, pageSize);
+
+            var barcodes = result.Items
+                .Where(i => !string.IsNullOrWhiteSpace(i.Barcode))
+                .Select(i => i.Barcode!)
+                .Distinct()
+                .ToList();
+
+            var sourceUrls = result.Items
+                .Where(i => !string.IsNullOrWhiteSpace(i.SourceUrl))
+                .Select(i => i.SourceUrl!)
+                .Distinct()
+                .ToList();
+
+            var existingByBarcode = await _context.Products
+                .Where(p => p.IsActive && p.Barcode != null && barcodes.Contains(p.Barcode))
+                .ToDictionaryAsync(p => p.Barcode!, p => p.ProductId);
+
+            var existingByUrl = await _context.Products
+                .Where(p => p.IsActive && p.OffProductUrl != null && sourceUrls.Contains(p.OffProductUrl))
+                .ToDictionaryAsync(p => p.OffProductUrl!, p => p.ProductId);
+
+            foreach (var item in result.Items)
+            {
+                if (!string.IsNullOrWhiteSpace(item.Barcode) && existingByBarcode.TryGetValue(item.Barcode, out var pid))
+                    item.ExistingProductId = pid;
+                else if (!string.IsNullOrWhiteSpace(item.SourceUrl) && existingByUrl.TryGetValue(item.SourceUrl, out var pid2))
+                    item.ExistingProductId = pid2;
+            }
+
+            return Ok(result);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(502, new { message = $"External food search is temporarily unavailable: {ex.Message}" });
+        }
+    }
+
+    [HttpGet("search-off")]
+    public async Task<IActionResult> SearchOpenFoodFacts([FromQuery] string q, [FromQuery] int page = 1, [FromQuery] int pageSize = 12)
+    {
+        if (string.IsNullOrWhiteSpace(q) || q.Trim().Length < 2)
+            return BadRequest(new { message = "Enter at least 2 characters to search Open Food Facts." });
+
+        try
+        {
+            var result = await _offService.SearchExternalAsync(q, null, "off", page, pageSize);
+            var barcodes = result.Items.Where(x => x.Barcode != null).Select(x => x.Barcode!).ToList();
+            var existingMap = await _context.Products
+                .Where(p => p.IsActive && p.Barcode != null && barcodes.Contains(p.Barcode))
+                .ToDictionaryAsync(p => p.Barcode!, p => p.ProductId);
+
+            foreach (var item in result.Items)
+            {
+                if (item.Barcode != null && existingMap.TryGetValue(item.Barcode, out var pid))
+                    item.ExistingProductId = pid;
+            }
+
+            return Ok(result.Items);
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(502, new { message = $"Open Food Facts search is temporarily unavailable: {ex.Message}" });
+        }
+    }
+
+    [HttpPost("import-external/{source}/{externalId}")]
+    public async Task<IActionResult> ImportExternal(string source, string externalId)
+    {
+        if (string.IsNullOrWhiteSpace(externalId))
+            return BadRequest(new { message = "Invalid external identifier." });
+
+        try
+        {
+            var detail = await _offService.FetchExternalDetailAsync(source, externalId);
+            if (detail == null)
+                return NotFound(new { message = $"No packaged food product found on {source} for '{externalId}'." });
+
+            var existing = await FindExistingLocalProductAsync(detail.Product.Barcode, detail.Product.OffProductUrl);
+            if (existing != null)
+            {
+                var existingAssessed = _assessment.AssessProduct(existing);
+                return Ok(new { product = existing, assessment = existingAssessed, alreadyExisted = true });
+            }
+
+            _context.Products.Add(detail.Product);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { product = detail.Product, assessment = detail.Assessment, alreadyExisted = false });
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(502, new { message = $"Unable to import product: {ex.Message}" });
+        }
+    }
+
+    [HttpPost("import-off/{barcode}")]
+    public Task<IActionResult> ImportFromOpenFoodFacts(string barcode) =>
+        ImportExternal("off", new string((barcode ?? "").Where(char.IsDigit).ToArray()));
 
     [HttpGet("compare")]
     public async Task<IActionResult> CompareProducts([FromQuery] string ids)
@@ -308,76 +458,19 @@ public class ProductsController : ControllerBase
         });
     }
 
-    [HttpGet("search-off")]
-    public async Task<IActionResult> SearchOpenFoodFacts([FromQuery] string q)
+    private async Task<Product?> FindExistingLocalProductAsync(string? barcode, string? sourceUrl)
     {
-        if (string.IsNullOrWhiteSpace(q) || q.Trim().Length < 2)
-            return BadRequest(new { message = "Enter at least 2 characters to search Open Food Facts." });
-
-        try
+        if (!string.IsNullOrWhiteSpace(barcode))
         {
-            var items = await _offService.SearchAsync(q, 12);
-            var barcodes = items.Select(x => x.Barcode).ToList();
-            var existingMap = await _context.Products
-                .Where(p => p.IsActive && p.Barcode != null && barcodes.Contains(p.Barcode))
-                .ToDictionaryAsync(p => p.Barcode!, p => p.ProductId);
-
-            var result = items.Select(item => new
-            {
-                item.Barcode,
-                item.ProductName,
-                item.Brand,
-                item.Category,
-                item.ImageUrl,
-                item.NetWeight,
-                item.ServingSize,
-                item.CaloriesPer100g,
-                item.SugarPer100g,
-                item.ProteinPer100g,
-                item.SodiumMgPer100g,
-                item.NovaGroup,
-                item.OffProductUrl,
-                existingProductId = existingMap.TryGetValue(item.Barcode, out var pid) ? pid : (int?)null
-            });
-
-            return Ok(result);
+            var byCode = await _context.Products.FirstOrDefaultAsync(p => p.IsActive && p.Barcode == barcode);
+            if (byCode != null) return byCode;
         }
-        catch (Exception ex)
+        if (!string.IsNullOrWhiteSpace(sourceUrl))
         {
-            return StatusCode(502, new { message = $"Open Food Facts search is temporarily unavailable: {ex.Message}" });
+            var byUrl = await _context.Products.FirstOrDefaultAsync(p => p.IsActive && p.OffProductUrl == sourceUrl);
+            if (byUrl != null) return byUrl;
         }
-    }
-
-    [HttpPost("import-off/{barcode}")]
-    public async Task<IActionResult> ImportFromOpenFoodFacts(string barcode)
-    {
-        var cleanCode = new string((barcode ?? "").Where(char.IsDigit).ToArray());
-        if (string.IsNullOrWhiteSpace(cleanCode))
-            return BadRequest(new { message = "Invalid barcode." });
-
-        var existing = await _context.Products.FirstOrDefaultAsync(p => p.Barcode == cleanCode && p.IsActive);
-        if (existing != null)
-        {
-            var existingAssessed = _assessment.AssessProduct(existing);
-            return Ok(new { product = existing, assessment = existingAssessed, alreadyExisted = true });
-        }
-
-        try
-        {
-            var imported = await _offService.FetchAndBuildProductAsync(cleanCode);
-            if (imported == null)
-                return NotFound(new { message = $"No packaged food product found in Open Food Facts for barcode {cleanCode}." });
-
-            _context.Products.Add(imported);
-            await _context.SaveChangesAsync();
-
-            var assessed = _assessment.AssessProduct(imported);
-            return Ok(new { product = imported, assessment = assessed, alreadyExisted = false });
-        }
-        catch (Exception ex)
-        {
-            return StatusCode(502, new { message = $"Unable to import product from Open Food Facts: {ex.Message}" });
-        }
+        return null;
     }
 
     private async Task<List<object>> FindBetterAlternativesAsync(string? category, int? currentScore, int? excludeProductId)

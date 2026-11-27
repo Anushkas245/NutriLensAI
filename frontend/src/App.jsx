@@ -24,6 +24,7 @@ function App() {
                 <Route path="/" element={<HomePage />} />
                 <Route path="/explore" element={<ExplorePage />} />
                 <Route path="/scanner" element={<ScannerPage />} />
+                <Route path="/products/external/:source/:externalId" element={<ProductDetailPage />} />
                 <Route path="/products/:id" element={<ProductDetailPage />} />
                 <Route path="/compare" element={<ComparePage />} />
                 <Route path="/dashboard" element={<DashboardPage />} />
