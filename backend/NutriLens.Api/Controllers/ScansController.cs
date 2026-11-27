@@ -283,6 +283,22 @@ public class ScansController : ControllerBase
         return Ok(new { deleted = true });
     }
 
+    [HttpDelete("history")]
+    public async Task<IActionResult> ClearHistory()
+    {
+        var userId = _auth.ValidateTokenAndGetUserId(Request);
+        var scans = userId.HasValue
+            ? await _context.ScanHistories.Where(s => s.UserId == userId.Value).ToListAsync()
+            : await _context.ScanHistories.Where(s => s.UserId == null).ToListAsync();
+
+        if (scans.Count > 0)
+        {
+            _context.ScanHistories.RemoveRange(scans);
+            await _context.SaveChangesAsync();
+        }
+        return Ok(new { cleared = scans.Count });
+    }
+
     private async Task<object?> TryGetAiCommentaryAsync(
         string? productName, string? category, string? ingredientsText,
         string verdict, string novaLabel, List<string> highAlerts)

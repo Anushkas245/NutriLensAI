@@ -62,10 +62,10 @@ export default function ComparePage() {
   };
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="flex flex-col justify-between gap-4 border-b border-[#E3ECE4] pb-6 md:flex-row md:items-end">
+    <div className="space-y-6">
+      <div className="flex flex-col justify-between gap-4 border-b border-[#E3ECE4] pb-5 md:flex-row md:items-end">
         <div>
-          <h1 className="text-3xl font-extrabold text-[#143326]">Product Comparison</h1>
+          <h1 className="text-2xl font-extrabold text-[#143326] sm:text-3xl">Compare Foods</h1>
           <p className="mt-1 text-sm text-[#5E7266]">
             Compare 2 to 4 packaged food products side-by-side across nutrients, additives, and NOVA processing levels.
           </p>

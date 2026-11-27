@@ -84,6 +84,7 @@ export const SCANS_API = {
   history: () => apiRequest('/scans/history'),
   get: (id) => apiRequest(`/scans/${id}`),
   remove: (id) => apiRequest(`/scans/${id}`, { method: 'DELETE' }),
+  clearHistory: () => apiRequest('/scans/history', { method: 'DELETE' }),
 };
 
 export const AUTH_API = {

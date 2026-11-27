@@ -14,7 +14,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { PRODUCTS_API, USER_API } from '../lib/api';
-import AssessmentReport from '../components/AssessmentReport';
+import ProductDetailTabs from '../components/ProductDetailTabs';
 import { useCompare } from '../context/CompareContext';
 import { useAuth } from '../context/AuthContext';
 
@@ -83,7 +83,7 @@ export default function ProductDetailPage() {
 
   const handleSaveBookmark = async () => {
     if (!user) {
-      setSaveMessage('Sign in on the Dashboard to bookmark products to your account.');
+      setSaveMessage('Sign in on Profile / Account to bookmark products.');
       return;
     }
     try {
@@ -105,7 +105,7 @@ export default function ProductDetailPage() {
         });
       }
       setSavedSuccess(true);
-      setSaveMessage('Saved to your NutriLens dashboard.');
+      setSaveMessage('Saved to your Saved Products library.');
     } catch (err) {
       setSaveMessage(err.message || 'Could not save product.');
     }
@@ -113,7 +113,7 @@ export default function ProductDetailPage() {
 
   if (loading) {
     return (
-      <div className="mx-auto flex min-h-[400px] max-w-6xl items-center justify-center gap-2 px-4 text-sm text-[#5E7266]">
+      <div className="flex min-h-[360px] items-center justify-center gap-2 text-sm text-[#5E7266]">
         <RefreshCw className="h-5 w-5 animate-spin text-[#426E4D]" />
         Loading full packaged food analysis...
       </div>
@@ -122,13 +122,13 @@ export default function ProductDetailPage() {
 
   if (error || !data?.product) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-12">
+      <div className="space-y-4">
         <div className="flex items-center gap-3 rounded-2xl border border-[#EFCBC4] bg-[#FDF3F1] p-5 text-sm text-[#96382C]">
           <AlertCircle className="h-5 w-5 shrink-0" />
           <span>{error || 'Product not found.'}</span>
         </div>
-        <Link to="/explore" className="mt-4 inline-flex items-center gap-1.5 text-sm font-bold text-[#2E5238]">
-          <ArrowLeft className="h-4 w-4" /> Back to Explore
+        <Link to="/explore" className="inline-flex items-center gap-1.5 text-sm font-bold text-[#2E5238]">
+          <ArrowLeft className="h-4 w-4" /> Back to Explore Foods
         </Link>
       </div>
     );
@@ -139,8 +139,8 @@ export default function ProductDetailPage() {
   const inCompare = localProductId ? compareIds.includes(localProductId) : false;
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-3">
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <Link
           to="/explore"
           className="inline-flex items-center gap-1.5 text-sm font-semibold text-[#4B6154] hover:text-[#143326]"
@@ -199,7 +199,7 @@ export default function ProductDetailPage() {
       </div>
 
       {data.isExternal && (
-        <div className="mb-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[#D4E4D5] bg-[#F3F8F3] px-4 py-3 text-xs text-[#2E5238]">
+        <div className="flex flex-wrap items-center justify-between gap-2 rounded-2xl border border-[#D4E4D5] bg-[#F3F8F3] px-4 py-3 text-xs text-[#2E5238]">
           <span className="inline-flex items-center gap-2 font-semibold">
             <Globe className="h-4 w-4" />
             Live External Preview ({product.dataSource}) — rendered directly without requiring prior SQL Server import.
@@ -208,26 +208,26 @@ export default function ProductDetailPage() {
       )}
 
       {saveMessage && (
-        <div className="mb-4 rounded-xl border border-[#D4E4D5] bg-[#F2F8F2] px-4 py-2.5 text-xs font-semibold text-[#1D4130]">
+        <div className="rounded-xl border border-[#D4E4D5] bg-[#F2F8F2] px-4 py-2.5 text-xs font-semibold text-[#1D4130]">
           {saveMessage}
         </div>
       )}
 
       {/* Product Identity Header */}
-      <div className="mb-6 flex flex-col gap-6 rounded-3xl border border-[#E3ECE4] bg-white p-6 sm:flex-row sm:items-center">
+      <div className="flex flex-col gap-5 rounded-3xl border border-[#E3ECE4] bg-white p-6 sm:flex-row sm:items-center">
         {product.imageUrl ? (
           <img
             src={product.imageUrl}
             alt={product.productName}
-            className="h-28 w-28 shrink-0 rounded-2xl border border-[#E8EFE8] bg-[#FAFDF9] object-contain p-2"
+            className="h-24 w-24 shrink-0 rounded-2xl border border-[#E8EFE8] bg-[#FAFDF9] object-contain p-2"
           />
         ) : (
-          <div className="flex h-28 w-28 shrink-0 items-center justify-center rounded-2xl bg-[#EEF5EE] text-[#426E4D]">
-            <Leaf className="h-10 w-10" />
+          <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl bg-[#EEF5EE] text-[#426E4D]">
+            <Leaf className="h-9 w-9" />
           </div>
         )}
 
-        <div className="flex-1 space-y-2">
+        <div className="flex-1 space-y-1.5">
           <div className="flex flex-wrap items-center gap-2 text-xs text-[#5E7266]">
             {product.barcode && (
               <span className="rounded-md bg-[#F3F6F3] px-2 py-0.5 font-mono">
@@ -245,16 +245,8 @@ export default function ProductDetailPage() {
           <h1 className="text-2xl font-extrabold text-[#143326] sm:text-3xl">
             {product.productName}
           </h1>
-          {data.rawCategories?.length > 0 && (
-            <div className="flex flex-wrap gap-1.5">
-              {data.rawCategories.map((c) => (
-                <span key={c} className="rounded-full bg-[#F4F7F4] px-2.5 py-0.5 text-[11px] font-medium text-[#4B6154]">
-                  {c}
-                </span>
-              ))}
-            </div>
-          )}
           <div className="flex flex-wrap items-center gap-4 text-xs text-[#5E7266]">
+            {product.brand && <span>Brand: <strong className="text-[#1D4130]">{product.brand}</strong></span>}
             <span>Source: <strong className="text-[#1D4130]">{product.dataSource || 'NutriLens Database'}</strong></span>
             {product.offProductUrl && (
               <a
@@ -263,22 +255,20 @@ export default function ProductDetailPage() {
                 rel="noreferrer"
                 className="inline-flex items-center gap-1 font-semibold text-[#2E5238] hover:underline"
               >
-                View external source record <ExternalLink className="h-3 w-3" />
+                Source Record <ExternalLink className="h-3 w-3" />
               </a>
             )}
           </div>
         </div>
       </div>
 
-      <AssessmentReport
-        productName={product.productName}
-        brand={product.brand}
-        category={product.category}
-        servingSizeText={product.servingSize}
-        servingSizeG={product.servingSizeG}
-        allergensText={product.allergens}
+      <ProductDetailTabs
+        product={product}
         assessment={assessment}
         betterAlternatives={betterAlternatives}
+        nutriScoreGrade={data.nutriScoreGrade}
+        rawCategories={data.rawCategories}
+        isExternal={Boolean(data.isExternal)}
       />
     </div>
   );

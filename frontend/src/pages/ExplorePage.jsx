@@ -241,11 +241,11 @@ export default function ExplorePage() {
   const visibleLocalProducts = products.slice(0, localVisibleCount);
 
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col justify-between gap-4 border-b border-[#E3ECE4] pb-6 md:flex-row md:items-end">
+      <div className="flex flex-col justify-between gap-4 border-b border-[#E3ECE4] pb-5 md:flex-row md:items-end">
         <div>
-          <h1 className="text-3xl font-extrabold text-[#143326]">Explore Packaged Foods</h1>
+          <h1 className="text-2xl font-extrabold text-[#143326] sm:text-3xl">Explore Foods</h1>
           <p className="mt-1 text-sm text-[#5E7266]">
             Search by product name, brand, category, or barcode across our SQL Server catalogue and live Open Food Facts / USDA databases.
           </p>

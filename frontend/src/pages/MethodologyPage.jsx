@@ -2,8 +2,8 @@ import { ShieldCheck, Layers, FlaskConical, Cpu } from 'lucide-react';
 
 export default function MethodologyPage() {
   return (
-    <div className="mx-auto max-w-4xl px-4 py-10 sm:px-6 lg:px-8 space-y-8">
-      <div className="border-b border-[#E3ECE4] pb-6">
+    <div className="max-w-4xl space-y-6">
+      <div className="border-b border-[#E3ECE4] pb-5">
         <span className="text-xs font-bold uppercase tracking-wider text-[#426E4D]">
           About &amp; Methodology
         </span>

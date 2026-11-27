@@ -14,22 +14,51 @@ import {
 import { PRODUCTS_API, PACKAGED_CATEGORIES } from '../lib/api';
 import { getVerdictStyle } from '../components/ScoreBadge';
 
+const VALUE_STEPS = [
+  {
+    num: '01',
+    title: 'Find the product or scan its pack.',
+    detail:
+      'Search our packaged food database and live Open Food Facts records by name, brand, or barcode, or capture a package label directly.',
+  },
+  {
+    num: '02',
+    title: 'See the useful parts explained plainly.',
+    detail:
+      'Inspect per-100g and per-serving nutrition, FSSAI daily-value context, NOVA processing groups, and decoded additives in everyday language.',
+  },
+  {
+    num: '03',
+    title: 'Keep missing data visible and useful.',
+    detail:
+      'Review AI-extracted values before scoring and see unavailable nutrients marked explicitly rather than treated as zero.',
+  },
+];
+
 export default function HomePage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [featured, setFeatured] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [liveCount, setLiveCount] = useState(null);
   const navigate = useNavigate();
 
   useEffect(() => {
     let active = true;
     PRODUCTS_API.list({ sort: 'score_desc' })
       .then((data) => {
-        if (active && Array.isArray(data)) setFeatured(data.slice(0, 6));
+        if (active && Array.isArray(data)) {
+          setFeatured(data.slice(0, 6));
+          setLiveCount(data.length);
+        }
       })
       .catch(() => {});
     PRODUCTS_API.categories()
       .then((data) => {
-        if (active && Array.isArray(data)) setCategories(data);
+        if (active && Array.isArray(data)) {
+          setCategories(data);
+          const sum = data.reduce((acc, item) => acc + (Number(item.count) || 0), 0);
+          setLiveCount((prev) => (prev !== null ? prev : sum > 0 ? sum : null));
+        }
       })
       .catch(() => {});
     return () => {
@@ -42,8 +71,13 @@ export default function HomePage() {
     navigate(searchTerm.trim() ? `/explore?q=${encodeURIComponent(searchTerm.trim())}` : '/explore');
   };
 
+  const eyebrowLabel =
+    typeof liveCount === 'number' && liveCount > 0
+      ? `FOOD · ${liveCount} DECODED`
+      : 'PACKAGED FOOD INTELLIGENCE';
+
   return (
-    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="mx-auto max-w-7xl space-y-12 px-4 py-8 sm:px-6 lg:px-8">
       {/* Editorial Minimal White & Sage Hero */}
       <section className="relative overflow-hidden rounded-3xl border border-[#DCE8DD] bg-white p-8 shadow-sm sm:p-12 lg:p-14">
         <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-[#EAF4EB]/70 blur-3xl" />
@@ -51,25 +85,28 @@ export default function HomePage() {
 
         <div className="relative grid items-center gap-10 lg:grid-cols-12">
           <div className="lg:col-span-7">
-            <span className="inline-flex items-center gap-2 rounded-full border border-[#D4E4D5] bg-[#F2F8F2] px-3.5 py-1 text-xs font-bold uppercase tracking-wider text-[#2E5238]">
+            <span className="inline-flex items-center gap-2 rounded-full border border-[#D4E4D5] bg-[#F2F8F2] px-3.5 py-1.5 text-[11px] font-extrabold uppercase tracking-[0.16em] text-[#2E5238]">
               <Leaf className="h-3.5 w-3.5" />
-              Packaged Human Food Intelligence
+              {eyebrowLabel}
             </span>
-            <h1 className="mt-4 font-['Plus_Jakarta_Sans'] text-3xl font-extrabold leading-[1.1] tracking-tight text-[#143326] sm:text-5xl">
-              Know every ingredient before it reaches your plate.
+
+            <h1 className="mt-5 font-['Plus_Jakarta_Sans'] text-3xl font-extrabold uppercase leading-[1.06] tracking-tight text-[#143326] sm:text-5xl lg:text-[52px]">
+              UNDERSTAND WHAT&apos;S IN YOUR PACKAGED FOOD.
             </h1>
-            <p className="mt-4 max-w-2xl text-base leading-relaxed text-[#4B6154]">
-              Scan packaged food labels with local AI vision, review every extracted value, decode additives &amp; INS codes, check FSSAI daily-value limits, and compare cleaner alternatives.
+
+            <p className="mt-5 max-w-2xl text-base leading-relaxed text-[#4B6154] sm:text-lg">
+              Nutrition labels, ingredients and useful context for the things you actually pick up in a shop.
             </p>
 
-            <form onSubmit={handleSearchSubmit} className="mt-7 flex flex-col gap-3 sm:flex-row">
+            <form onSubmit={handleSearchSubmit} className="mt-8 flex flex-col gap-3 sm:flex-row">
               <div className="relative flex-1">
                 <Search className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#6B7E73]" />
                 <input
                   type="search"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Search biscuits, noodles, snacks, cereals, brands..."
+                  placeholder="Search product, brand, or barcode (e.g. Lay's, Oreo, Maggi)..."
+                  aria-label="Search packaged food products"
                   className="h-12 w-full rounded-xl border border-[#D2E0D3] bg-[#FAFDF9] pl-11 pr-4 text-sm text-[#143326] outline-none transition focus:border-[#426E4D] focus:bg-white focus:ring-3 focus:ring-[#426E4D]/15"
                 />
               </div>
@@ -127,11 +164,50 @@ export default function HomePage() {
         </div>
       </section>
 
+      {/* Introductory Value Section */}
+      <section className="rounded-3xl border border-[#DCE8DD] bg-white p-8 shadow-2xs sm:p-10">
+        <div className="max-w-3xl">
+          <span className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#426E4D]">
+            HOW NUTRILENS WORKS
+          </span>
+          <h2 className="mt-2 font-['Plus_Jakarta_Sans'] text-2xl font-extrabold uppercase tracking-tight text-[#143326] sm:text-3xl">
+            READ THE LABEL WITHOUT DOING THE LABEL&apos;S JOB.
+          </h2>
+        </div>
+
+        <div className="mt-7 grid grid-cols-1 gap-4 md:grid-cols-3">
+          {VALUE_STEPS.map((step) => (
+            <div
+              key={step.num}
+              className="flex flex-col justify-between rounded-2xl border border-[#E3ECE4] bg-[#FAFDF9] p-6"
+            >
+              <div>
+                <div className="flex items-center gap-3">
+                  <span className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-[#E6F1E7] font-['Plus_Jakarta_Sans'] text-sm font-extrabold tabular-nums text-[#1D4130]">
+                    {step.num}
+                  </span>
+                  <div className="h-px flex-1 bg-[#DCE8DD]" />
+                </div>
+                <h3 className="mt-4 font-['Plus_Jakarta_Sans'] text-lg font-extrabold leading-snug text-[#143326]">
+                  {step.title}
+                </h3>
+                <p className="mt-2 text-sm leading-relaxed text-[#5E7266]">
+                  {step.detail}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
       {/* Packaged Human Food Categories */}
-      <section className="mt-12">
+      <section>
         <div className="flex items-end justify-between gap-4">
           <div>
-            <h2 className="text-2xl font-extrabold text-[#143326]">Packaged Food Categories</h2>
+            <span className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#426E4D]">
+              BROWSE BY AISLE
+            </span>
+            <h2 className="mt-1 text-2xl font-extrabold text-[#143326]">Packaged Food Categories</h2>
             <p className="mt-1 text-sm text-[#5E7266]">
               Focused exclusively on packaged human food across 10 core grocery categories.
             </p>
@@ -162,10 +238,13 @@ export default function HomePage() {
 
       {/* Featured Verified Products */}
       {featured.length > 0 && (
-        <section className="mt-12">
+        <section>
           <div className="flex items-end justify-between gap-4">
             <div>
-              <h2 className="text-2xl font-extrabold text-[#143326]">Verified Packaged Food Insights</h2>
+              <span className="text-[11px] font-extrabold uppercase tracking-[0.18em] text-[#426E4D]">
+                VERIFIED CATALOGUE
+              </span>
+              <h2 className="mt-1 text-2xl font-extrabold text-[#143326]">Verified Packaged Food Insights</h2>
               <p className="mt-1 text-sm text-[#5E7266]">
                 Real packaged product profiles sourced from Open Food Facts and evaluated deterministically.
               </p>
@@ -243,7 +322,7 @@ export default function HomePage() {
       )}
 
       {/* Transparency Principle Strip */}
-      <section className="mt-12 rounded-3xl border border-[#DCE8DD] bg-[#F2F7F2] p-6 sm:p-8">
+      <section className="rounded-3xl border border-[#DCE8DD] bg-[#F2F7F2] p-6 sm:p-8">
         <div className="grid gap-6 md:grid-cols-3">
           <div className="flex items-start gap-3">
             <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-[#2E5238]" />

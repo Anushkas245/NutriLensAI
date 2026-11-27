@@ -286,13 +286,13 @@ export default function ScannerPage() {
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+    <div className="space-y-6">
       {/* Header + 3-Step Indicator */}
-      <div className="flex flex-col justify-between gap-4 border-b border-[#E3ECE4] pb-6 md:flex-row md:items-center">
+      <div className="flex flex-col justify-between gap-4 border-b border-[#E3ECE4] pb-5 md:flex-row md:items-center">
         <div>
-          <h1 className="text-3xl font-extrabold text-[#143326]">Packaged Food Label Scanner</h1>
+          <h1 className="text-2xl font-extrabold text-[#143326] sm:text-3xl">Label Scanner</h1>
           <p className="mt-1 text-sm text-[#5E7266]">
-            Exclusively for packaged human food labels. Extract with AI vision, verify values, and run deterministic analysis.
+            Dedicated 3-step workspace for packaged human food labels.
           </p>
         </div>
 
@@ -682,6 +682,18 @@ export default function ScannerPage() {
               Analysis complete {report.scanId ? `• Saved to Scan History (#${report.scanId})` : ''}
             </div>
             <div className="flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setReport(null);
+                  setSavedNotice('');
+                  setStep('capture');
+                }}
+                className="inline-flex items-center gap-1.5 rounded-xl border border-[#D2E0D3] bg-white px-3.5 py-2 text-xs font-bold text-[#1D4130]"
+              >
+                <ScanText className="h-3.5 w-3.5" />
+                Scan Another
+              </button>
               <button
                 type="button"
                 onClick={() => setStep('review')}
